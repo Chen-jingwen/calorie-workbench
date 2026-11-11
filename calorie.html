@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>热量工作台</title>
+    <title>热量工作台｜完整版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -48,7 +49,7 @@
                 <div class="flex gap-3">
                     <button class="text-gray-500"><i class="fa fa-ellipsis-h"></i></button>
                     <button class="text-gray-500"><i class="fa fa-share-alt"></i></button>
-                    <button class="text-primary font-medium">保存</button>
+                    <button onclick="saveTodayData()" class="text-primary font-medium">保存</button>
                 </div>
             </div>
             <!-- 热量圆环卡片 -->
@@ -57,18 +58,18 @@
                     <div>
                         <div class="text-lg opacity-90">今日净摄入</div>
                         <div class="text-5xl font-bold my-2">
-                            <span id="netCal">1280</span>
+                            <span id="netCal">0</span>
                             <span class="text-xl">kcal</span>
                         </div>
                         <div class="text-lg opacity-90">目标摄入 <span id="targetCal">1500</span> kcal</div>
                         <button class="bg-primary rounded-full px-4 py-2 mt-3 text-sm font-medium">
-                            能量缺口 <span id="gapCal">220</span> kcal
+                            能量缺口 <span id="gapCal">0</span> kcal
                         </button>
                     </div>
                     <div class="relative w-32 h-32">
                         <svg class="w-full h-full ring-progress" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r="40" fill="none" stroke="#334b66" stroke-width="8"/>
-                            <circle id="ringCircle" cx="50" cy="50" r="40" fill="none" stroke="#22c59e" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="60"/>
+                            <circle id="ringCircle" cx="50" cy="50" r="40" fill="none" stroke="#22c59e" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
                         </svg>
                     </div>
                 </div>
@@ -109,50 +110,48 @@
                 <div class="flex gap-3">
                     <button class="text-gray-600"><i class="fa fa-ellipsis-h"></i></button>
                     <button class="text-gray-600"><i class="fa fa-share-alt"></i></button>
-                    <button class="text-primary font-medium">保存</button>
+                    <button onclick="saveFoodItem()" class="text-primary font-medium">保存</button>
                 </div>
             </div>
             <div class="p-4">
                 <div class="bg-white rounded-xl p-6 card-shadow mb-4">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4">
-                        <i class="fa fa-check-square-o text-gray-400 text-3xl"></i>
-                        <p class="text-gray-500 mt-2">拍照上传食物图片</p>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4 relative">
+                        <input type="file" id="foodImgInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <i class="fa fa-camera text-gray-400 text-3xl"></i>
+                        <p class="text-gray-500 mt-2">点击上传食物图片</p>
+                        <div id="foodImgPreview" class="mt-3"></div>
                     </div>
                     <div class="flex gap-3">
-                        <button class="flex-1 border border-gray-300 rounded-lg py-2">拍照识别</button>
-                        <button class="flex-1 bg-darkCard text-white rounded-lg py-2">从相册选择</button>
+                        <button onclick="startSpeechRecog()" class="flex-1 border border-gray-300 rounded-lg py-2">语音录入</button>
+                        <button onclick="queryAiCal()" class="flex-1 bg-darkCard text-white rounded-lg py-2">AI 查询热量</button>
                     </div>
                 </div>
                 <div class="bg-teal-50 rounded-xl p-4 mb-4 card-shadow">
                     <div class="flex items-center gap-2 mb-2">
                         <i class="fa fa-microphone text-darkCard"></i>
-                        <span class="font-semibold">语音描述</span>
-                        <span class="ml-auto w-3 h-3 rounded-full bg-orange-500"></span>
+                        <span class="font-semibold">食物描述</span>
                     </div>
-                    <textarea id="foodVoiceInput" class="w-full border rounded-lg p-3 text-sm" placeholder="喝了一杯茉莉奶白，少冰，三分糖，中杯">喝了一杯茉莉奶白，少冰，三分糖，中杯</textarea>
-                    <button class="mt-2 border border-blue-500 text-blue-600 rounded-lg px-3 py-1 text-sm">识别并查询热量</button>
+                    <textarea id="foodDesc" class="w-full border rounded-lg p-3 text-sm" placeholder="例如：一杯茉莉奶白，少冰三分糖中杯"></textarea>
                 </div>
                 <div class="space-y-3 mb-6">
                     <div>
                         <label class="block text-sm font-medium mb-1">食物名称</label>
-                        <input type="text" class="w-full border rounded-lg p-2">
+                        <input id="foodName" type="text" class="w-full border rounded-lg p-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">规格</label>
-                        <input type="text" class="w-full border rounded-lg p-2">
+                        <label class="block text-sm font-medium mb-1">份量/规格</label>
+                        <input id="foodUnit" type="text" class="w-full border rounded-lg p-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">热量</label>
-                        <select class="w-full border rounded-lg p-2">
-                            <option value="">请选择</option>
-                        </select>
+                        <label class="block text-sm font-medium mb-1">热量 kcal</label>
+                        <input id="foodCal" type="number" class="w-full border rounded-lg p-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">时间</label>
-                        <input type="date" class="w-full border rounded-lg p-2">
+                        <label class="block text-sm font-medium mb-1">食用时间</label>
+                        <input id="foodTime" type="datetime-local" class="w-full border rounded-lg p-2">
                     </div>
                 </div>
-                <button class="w-full bg-blue-600 text-white rounded-xl py-3 font-medium">保存到今日记录</button>
+                <button onclick="saveFoodItem()" class="w-full bg-blue-600 text-white rounded-xl py-3 font-medium">保存到今日记录</button>
             </div>
         </div>
 
@@ -164,7 +163,7 @@
                 <div class="flex gap-3">
                     <button class="text-gray-600"><i class="fa fa-ellipsis-h"></i></button>
                     <button class="text-gray-600"><i class="fa fa-share-alt"></i></button>
-                    <button class="text-primary font-medium">保存</button>
+                    <button onclick="saveSportItem()" class="text-primary font-medium">保存</button>
                 </div>
             </div>
             <div class="p-4">
@@ -172,7 +171,10 @@
                     <div>
                         <p class="text-lg font-medium">上传运动截图</p>
                     </div>
-                    <button class="bg-white text-blue-600 px-4 py-2 rounded-lg">选择图片</button>
+                    <label class="bg-white text-blue-600 px-4 py-2 rounded-lg cursor-pointer">
+                        选择图片
+                        <input type="file" id="sportImgInput" accept="image/*" class="hidden">
+                    </label>
                 </div>
                 <div class="bg-white rounded-xl p-4 card-shadow mb-4">
                     <div class="grid grid-cols-3 text-center border-b pb-2 mb-2">
@@ -180,52 +182,49 @@
                         <div>运动时长</div>
                         <div>消耗热量</div>
                     </div>
-                    <div class="grid grid-cols-3 text-center py-2">
-                        <div>快走</div>
-                        <div>40 分钟</div>
-                        <div>180 kcal</div>
-                        <div class="col-span-3 text-right">
-                            <button class="text-gray-400"><i class="fa fa-times"></i></button>
-                        </div>
+                    <div id="sportListWrap" class="space-y-2"></div>
+                </div>
+                <div class="space-y-3 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">运动名称</label>
+                        <input id="sportName" type="text" class="w-full border rounded-lg p-2" placeholder="快走、慢跑、跳绳">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">时长（分钟）</label>
+                        <input id="sportMin" type="number" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">消耗热量 kcal</label>
+                        <input id="sportCal" type="number" class="w-full border rounded-lg p-2">
                     </div>
                 </div>
                 <div class="bg-gradient-to-br from-teal-400 to-blue-400 rounded-xl p-5 text-white mb-4 card-shadow">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold">今日汇总</h3>
-                        <button><i class="fa fa-minus-circle"></i></button>
                     </div>
                     <div class="grid grid-cols-3 gap-2 text-center">
                         <div>
                             <div class="text-sm opacity-90">今日运动消耗</div>
-                            <div class="text-lg font-semibold">320 kcal</div>
+                            <div class="text-lg font-semibold" id="sumSportCal">0</div>
                         </div>
                         <div>
                             <div class="text-sm opacity-90">食物摄入</div>
-                            <div class="text-lg font-semibold">1600 kcal</div>
+                            <div class="text-lg font-semibold" id="sumFoodCal">0</div>
                         </div>
                         <div>
                             <div class="text-sm opacity-90">目标摄入</div>
-                            <div class="text-lg font-semibold">1500 kcal</div>
+                            <div class="text-lg font-semibold" id="sumTargetCal">1500</div>
                         </div>
                     </div>
                     <div class="bg-white text-gray-800 rounded-full text-center py-2 mt-3 font-medium">
-                        当前超出 100 kcal
+                        <span id="tipText">暂无数据</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <svg class="w-16 h-16 ring-progress" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="#334b66" stroke-width="8"/>
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="#22c59e" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="120"/>
-                    </svg>
-                    <div>
-                        <p class="font-semibold text-gray-800">减少精制碳水，</p>
-                        <p class="font-semibold text-gray-800">增加快走或有氧运动</p>
-                    </div>
-                </div>
+                <button onclick="saveSportItem()" class="w-full bg-primary text-white rounded-xl py-3 font-medium">添加这条运动</button>
             </div>
         </div>
 
-        <!-- 目标设置子页面（简易版） -->
+        <!-- 目标设置子页面 -->
         <div id="sub-targetSet" class="sub-page hidden">
             <div class="bg-white px-4 py-5 flex justify-between items-center">
                 <button onclick="backHome()" class="text-gray-800"><i class="fa fa-arrow-left text-lg"></i></button>
@@ -233,14 +232,14 @@
                 <div class="flex gap-3">
                     <button class="text-gray-600"><i class="fa fa-ellipsis-h"></i></button>
                     <button class="text-gray-600"><i class="fa fa-share-alt"></i></button>
-                    <button class="text-primary font-medium">保存</button>
+                    <button onclick="saveTarget()" class="text-primary font-medium">保存</button>
                 </div>
             </div>
             <div class="p-4">
                 <div class="bg-white rounded-xl p-5 card-shadow">
                     <label class="block mb-2 font-medium">每日目标热量 (kcal)</label>
                     <input id="setTargetCal" type="number" value="1500" class="w-full border rounded-lg p-2">
-                    <button class="mt-3 w-full bg-primary text-white rounded-lg py-2">保存目标</button>
+                    <button onclick="saveTarget()" class="mt-3 w-full bg-primary text-white rounded-lg py-2">保存目标</button>
                 </div>
             </div>
         </div>
@@ -248,16 +247,18 @@
         <!-- 记录页面 -->
         <div id="page-record" class="page hidden px-4 py-6">
             <h2 class="text-xl font-bold mb-4">记录</h2>
-            <div class="text-gray-500">所有饮食、运动记录展示在这里</div>
+            <div id="recordWrap" class="space-y-3"></div>
         </div>
 
         <!-- 统计页面 -->
         <div id="page-stat" class="page hidden px-4 py-6">
-            <h2 class="text-xl font-bold mb-4">统计</h2>
-            <div class="text-gray-500">热量趋势图表、周/月汇总</div>
+            <h2 class="text-xl font-bold mb-4">热量统计</h2>
+            <div class="bg-white rounded-xl p-4 card-shadow">
+                <canvas id="statChart" height="260"></canvas>
+            </div>
         </div>
 
-        <!-- 我的（设置页，把原来图四的后台放这里） -->
+        <!-- 我的（设置页） -->
         <div id="page-mine" class="page hidden px-4 py-6">
             <h2 class="text-xl font-bold mb-4">我的</h2>
             <div class="bg-white rounded-xl p-5 card-shadow space-y-4">
@@ -267,17 +268,25 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">火山方舟 ARK Key</label>
-                    <input id="arkKey" type="text" class="w-full border rounded-lg p-2">
+                    <input id="arkKey" type="text" class="w-full border rounded-lg p-2" placeholder="填入你的火山方舟密钥">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">FatSecret Key</label>
-                    <input id="fatKey" type="text" class="w-full border rounded-lg p-2">
+                    <label class="block text-sm font-medium mb-1">火山方舟 Model</label>
+                    <input id="arkModel" type="text" class="w-full border rounded-lg p-2" placeholder="例如 doubao-vision-pro">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">代理地址（解决跨域，必填）</label>
+                    <input id="proxyUrl" type="text" class="w-full border rounded-lg p-2" placeholder="http://xxx/proxy">
                 </div>
                 <div class="flex gap-3">
-                    <button class="flex-1 border rounded-lg py-2">导出备份</button>
-                    <button class="flex-1 border rounded-lg py-2">导入备份</button>
+                    <button onclick="exportData()" class="flex-1 border rounded-lg py-2">导出备份</button>
+                    <label class="flex-1 border rounded-lg py-2 text-center cursor-pointer">
+                        导入备份
+                        <input type="file" id="importFile" accept="application/json" class="hidden">
+                    </label>
                 </div>
-                <button class="w-full bg-primary text-white rounded-lg py-2">保存设置</button>
+                <button onclick="saveAllSetting()" class="w-full bg-primary text-white rounded-lg py-2">保存设置</button>
+                <button onclick="clearAllData()" class="w-full bg-red-400 text-white rounded-lg py-2">清空全部记录</button>
             </div>
         </div>
 
@@ -305,23 +314,91 @@
     </div>
 
     <script>
-        // 页面切换
-        const pageList = ['home','record','stat','mine'];
-        const subList = ['addFood','addSport','targetSet'];
+        // 全局数据
+        let appData = JSON.parse(localStorage.getItem('calAppData')) || {
+            targetCal: 1500,
+            arkKey: '',
+            arkModel: 'doubao-vision-pro',
+            proxyUrl: '',
+            foodList: [],
+            sportList: [],
+            history: []
+        };
+        let speechRec = null;
+        let chartInstance = null;
+        const todayStr = new Date().toISOString().split('T')[0];
 
+        // 初始化加载
+        function init() {
+            document.getElementById('mineTarget').value = appData.targetCal;
+            document.getElementById('setTargetCal').value = appData.targetCal;
+            document.getElementById('arkKey').value = appData.arkKey;
+            document.getElementById('arkModel').value = appData.arkModel;
+            document.getElementById('proxyUrl').value = appData.proxyUrl;
+            document.getElementById('foodTime').value = new Date().toISOString().slice(0, 16);
+            bindFileEvents();
+            refreshAll();
+        }
+
+        // 绑定图片上传预览
+        function bindFileEvents() {
+            const foodImg = document.getElementById('foodImgInput');
+            foodImg.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('foodImgPreview').innerHTML = `<img src="${ev.target.result}" class="max-h-32 rounded-lg">`;
+                }
+                reader.readAsDataURL(file);
+            }
+            const sportImg = document.getElementById('sportImgInput');
+            sportImg.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    alert("运动截图已加载，后续 AI 识别会读取这张图");
+                }
+                reader.readAsDataURL(file);
+            }
+            // 导入备份文件
+            document.getElementById('importFile').onchange = function(e) {
+                const f = e.target.files[0];
+                if (!f) return;
+                const r = new FileReader();
+                r.onload = function(ev) {
+                    try {
+                        appData = JSON.parse(ev.target.result);
+                        saveLocal();
+                        init();
+                        alert("导入成功");
+                    } catch(err) {
+                        alert("备份文件格式错误");
+                    }
+                }
+                r.readAsText(f);
+            }
+        }
+
+        // 保存本地存储
+        function saveLocal() {
+            localStorage.setItem('calAppData', JSON.stringify(appData));
+        }
+
+        // 页面切换
         function switchTab(tabName) {
-            // 隐藏所有主页面
             document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
-            // 隐藏所有子页面
             document.querySelectorAll('.sub-page').forEach(p=>p.classList.add('hidden'));
             document.getElementById('page-'+tabName).classList.remove('hidden');
-            // 重置tab样式
             document.querySelectorAll('.tab-item').forEach(item=>{
                 item.classList.remove('tab-active');
                 item.classList.add('text-gray-500');
             })
             event.currentTarget.classList.add('tab-active');
             event.currentTarget.classList.remove('text-gray-500');
+            if(tabName === 'stat') renderChart();
+            if(tabName === 'record') renderRecord();
         }
 
         function switchSubPage(subName) {
@@ -334,26 +411,288 @@
             document.querySelectorAll('.sub-page').forEach(p=>p.classList.add('hidden'));
             document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
             document.getElementById('page-home').classList.remove('hidden');
-            // 重置tab激活
             document.querySelectorAll('.tab-item').forEach(item=>{
                 item.classList.remove('tab-active');
                 item.classList.add('text-gray-500');
             })
             document.querySelector('.tab-item').classList.add('tab-active');
             document.querySelector('.tab-item').classList.remove('text-gray-500');
+            refreshAll();
         }
 
-        // 本地存储、火山方舟调用逻辑你后续可以继续接入
-        function loadLocal() {
-            const saved = localStorage.getItem('calConfig');
-            if(saved) {
-                const cfg = JSON.parse(saved);
-                document.getElementById('mineTarget').value = cfg.target || 1500;
-                document.getElementById('arkKey').value = cfg.arkKey || '';
-                document.getElementById('fatKey').value = cfg.fatKey || '';
+        // 语音识别
+        function startSpeechRecog() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("当前浏览器不支持语音识别，请使用 Chrome / Edge");
+                return;
+            }
+            if (speechRec) speechRec.stop();
+            speechRec = new webkitSpeechRecognition();
+            speechRec.continuous = false;
+            speechRec.interimResults = false;
+            speechRec.lang = 'zh-CN';
+            speechRec.onresult = function(e) {
+                const text = e.results[0][0].transcript;
+                document.getElementById('foodDesc').value = text;
+                alert("语音识别完成：" + text);
+            }
+            speechRec.onerror = () => alert("语音识别出错");
+            speechRec.start();
+        }
+
+        // 【火山方舟 AI 调用】
+        // 说明：原生浏览器直接请求方舟接口会跨域，必须配置 proxyUrl 代理转发
+        async function queryAiCal() {
+            const key = appData.arkKey;
+            const model = appData.arkModel;
+            const proxy = appData.proxyUrl;
+            const desc = document.getElementById('foodDesc').value.trim();
+            if (!key || !proxy) {
+                alert("请先在【我的】页面填写火山方舟 Key 和代理地址！");
+                return;
+            }
+            if (!desc) {
+                alert("请先填写食物描述");
+                return;
+            }
+            const prompt = `你是热量计算器，根据食物描述，返回 JSON，只返回：{"name":"","cal":数字,"unit":"一份"}，不要多余文字。食物：${desc}`;
+            const payload = {
+                model: model,
+                messages: [{role:"user", content: prompt}]
+            }
+            try {
+                const res = await fetch(proxy, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${key}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                })
+                const raw = await res.json();
+                if (raw.choices && raw.choices.length > 0) {
+                    let ans = raw.choices[0].message.content;
+                    ans = ans.replace(/```json|```/g, '').trim();
+                    const obj = JSON.parse(ans);
+                    document.getElementById('foodName').value = obj.name || '';
+                    document.getElementById('foodCal').value = Number(obj.cal) || 0;
+                    document.getElementById('foodUnit').value = obj.unit || '份';
+                    alert("AI 解析完成！");
+                } else {
+                    alert("AI 返回异常");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("请求失败：检查代理地址、Key 是否正确，跨域问题一般由代理处理");
             }
         }
-        loadLocal();
+
+        // 保存食物条目
+        function saveFoodItem() {
+            const item = {
+                id: Date.now(),
+                name: document.getElementById('foodName').value.trim(),
+                unit: document.getElementById('foodUnit').value.trim(),
+                cal: Number(document.getElementById('foodCal').value || 0),
+                time: document.getElementById('foodTime').value,
+                type: "food",
+                date: todayStr
+            }
+            if (!item.name) {
+                alert("食物名称不能为空");
+                return;
+            }
+            appData.foodList.push(item);
+            saveLocal();
+            refreshAll();
+            alert("食物记录保存成功");
+        }
+
+        // 保存运动条目
+        function saveSportItem() {
+            const item = {
+                id: Date.now(),
+                name: document.getElementById('sportName').value.trim(),
+                min: Number(document.getElementById('sportMin').value || 0),
+                cal: Number(document.getElementById('sportCal').value || 0),
+                type: "sport",
+                date: todayStr
+            }
+            if (!item.name) {
+                alert("运动名称不能为空");
+                return;
+            }
+            appData.sportList.push(item);
+            saveLocal();
+            refreshAll();
+            renderSportList();
+            alert("运动记录保存成功");
+        }
+
+        // 删除单条记录
+        function delRecord(id, type) {
+            if (confirm("确定删除这条记录？")) {
+                if (type === 'food') appData.foodList = appData.foodList.filter(i => i.id !== id);
+                if (type === 'sport') appData.sportList = appData.sportList.filter(i => i.id !== id);
+                saveLocal();
+                refreshAll();
+                renderRecord();
+            }
+        }
+
+        // 保存目标
+        function saveTarget() {
+            appData.targetCal = Number(document.getElementById('setTargetCal').value || 1500);
+            saveLocal();
+            refreshAll();
+            alert("目标已保存");
+        }
+
+        // 保存全部设置
+        function saveAllSetting() {
+            appData.targetCal = Number(document.getElementById('mineTarget').value || 1500);
+            appData.arkKey = document.getElementById('arkKey').value.trim();
+            appData.arkModel = document.getElementById('arkModel').value.trim();
+            appData.proxyUrl = document.getElementById('proxyUrl').value.trim();
+            saveLocal();
+            refreshAll();
+            alert("设置保存成功");
+        }
+
+        // 导出备份
+        function exportData() {
+            const blob = new Blob([JSON.stringify(appData, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `热量记录备份_${todayStr}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 清空全部数据
+        function clearAllData() {
+            if (!confirm("确认清空所有记录？无法恢复！")) return;
+            appData = {
+                targetCal: 1500,
+                arkKey: '',
+                arkModel: 'doubao-vision-pro',
+                proxyUrl: '',
+                foodList: [],
+                sportList: [],
+                history: []
+            };
+            saveLocal();
+            init();
+            alert("已清空");
+        }
+
+        // 计算汇总、刷新首页、圆环
+        function refreshAll() {
+            const todayFood = appData.foodList.filter(f => f.date === todayStr);
+            const todaySport = appData.sportList.filter(s => s.date === todayStr);
+            const sumFood = todayFood.reduce((a, b) => a + b.cal, 0);
+            const sumSport = todaySport.reduce((a, b) => a + b.cal, 0);
+            const net = sumFood - sumSport;
+            const target = appData.targetCal;
+            const gap = target - net;
+
+            document.getElementById('netCal').innerText = net;
+            document.getElementById('targetCal').innerText = target;
+            document.getElementById('gapCal').innerText = gap;
+            document.getElementById('sumFoodCal').innerText = sumFood;
+            document.getElementById('sumSportCal').innerText = sumSport;
+            document.getElementById('sumTargetCal').innerText = target;
+
+            // 圆环进度
+            const percent = Math.min(net / target, 1);
+            const circle = document.getElementById('ringCircle');
+            const full = 251.2;
+            circle.style.strokeDashoffset = full * (1 - percent);
+
+            // 提示文字
+            const tip = document.getElementById('tipText');
+            if (net > target) {
+                tip.innerText = `今日超出 ${net - target} kcal`;
+            } else {
+                tip.innerText = `还剩 ${gap} kcal 额度`;
+            }
+            renderSportList();
+        }
+
+        // 渲染运动列表
+        function renderSportList() {
+            const todaySport = appData.sportList.filter(s => s.date === todayStr);
+            const wrap = document.getElementById('sportListWrap');
+            wrap.innerHTML = '';
+            todaySport.forEach(item => {
+                wrap.innerHTML += `
+                <div class="grid grid-cols-3 text-center py-2 border-b">
+                    <div>${item.name}</div>
+                    <div>${item.min} 分钟</div>
+                    <div>${item.cal} kcal</div>
+                </div>
+                `
+            })
+        }
+
+        // 渲染全部记录页面
+        function renderRecord() {
+            const wrap = document.getElementById('recordWrap');
+            wrap.innerHTML = '';
+            const all = [...appData.foodList.map(i=>({...i, typeName:"食物"})), ...appData.sportList.map(i=>({...i, typeName:"运动"}))];
+            all.sort((a,b)=>b.id - a.id);
+            all.forEach(item => {
+                wrap.innerHTML += `
+                <div class="bg-white rounded-xl p-4 card-shadow flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold">${item.name}</div>
+                        <div class="text-sm text-gray-500">${item.typeName} · ${item.cal} kcal · ${item.date}</div>
+                    </div>
+                    <button onclick="delRecord(${item.id}, '${item.type}')" class="text-red-400"><i class="fa fa-trash"></i></button>
+                </div>
+                `
+            })
+            if (all.length === 0) wrap.innerHTML = `<div class="text-gray-400 text-center py-6">暂无记录</div>`;
+        }
+
+        // 统计图表（近7天简易趋势）
+        function renderChart() {
+            const ctx = document.getElementById('statChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            const labels = [];
+            const foodData = [];
+            const sportData = [];
+            for(let i=6;i>=0;i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const ds = d.toISOString().split('T')[0];
+                labels.push(ds.slice(5));
+                const fd = appData.foodList.filter(f=>f.date === ds).reduce((a,b)=>a+b.cal,0);
+                const sd = appData.sportList.filter(s=>s.date === ds).reduce((a,b)=>a+b.cal,0);
+                foodData.push(fd);
+                sportData.push(sd);
+            }
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {label:"摄入热量", data:foodData, backgroundColor:"#22c59e"},
+                        {label:"消耗热量", data:sportData, backgroundColor:"#334b66"}
+                    ]
+                },
+                options: {responsive:true, maintainAspectRatio:false}
+            })
+        }
+
+        // 首页保存按钮
+        function saveTodayData() {
+            saveLocal();
+            alert("今日数据已保存");
+        }
+
+        init();
     </script>
 </body>
 </html>
