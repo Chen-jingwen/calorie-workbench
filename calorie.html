@@ -1,289 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>热量工作台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#22c59e',
+                        darkCard: '#162c44',
+                        softBg: '#f7fafc',
+                    },
+                    fontFamily: {
+                        sans: ['system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .ring-progress {
+                transform: rotate(-90deg);
+            }
+            .tab-active {
+                color: #22c59e;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            }
+        }
+    </style>
+</head>
+<body class="bg-softBg min-h-screen pb-20">
+    <div id="app" class="max-w-md mx-auto bg-white min-h-screen relative overflow-hidden">
+        <!-- 首页视图 -->
+        <div id="page-home" class="page px-4 py-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-xl font-bold text-gray-800">我的热量工作台</h1>
+                <div class="flex gap-3">
+                    <button class="text-gray-500"><i class="fa fa-ellipsis-h"></i></button>
+                    <button class="text-gray-500"><i class="fa fa-share-alt"></i></button>
+                    <button class="text-primary font-medium">保存</button>
+                </div>
+            </div>
+            <!-- 热量圆环卡片 -->
+            <div class="bg-darkCard rounded-2xl p-6 text-white mb-6 card-shadow">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-lg opacity-90">今日净摄入</div>
+                        <div class="text-5xl font-bold my-2">
+                            <span id="netCal">1280</span>
+                            <span class="text-xl">kcal</span>
+                        </div>
+                        <div class="text-lg opacity-90">目标摄入 <span id="targetCal">1500</span> kcal</div>
+                        <button class="bg-primary rounded-full px-4 py-2 mt-3 text-sm font-medium">
+                            能量缺口 <span id="gapCal">220</span> kcal
+                        </button>
+                    </div>
+                    <div class="relative w-32 h-32">
+                        <svg class="w-full h-full ring-progress" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#334b66" stroke-width="8"/>
+                            <circle id="ringCircle" cx="50" cy="50" r="40" fill="none" stroke="#22c59e" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="60"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <!-- 三大功能入口 -->
+            <div class="grid grid-cols-3 gap-4">
+                <div onclick="switchSubPage('addFood')" class="bg-white rounded-xl p-5 card-shadow text-center cursor-pointer">
+                    <div class="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-3">
+                        <i class="fa fa-list-ul text-primary text-xl"></i>
+                    </div>
+                    <div class="font-semibold text-gray-800">食物录入</div>
+                    <div class="text-sm text-gray-500 mt-2">拍照识别</div>
+                    <div class="text-sm text-gray-500">语音输入</div>
+                    <div class="text-sm text-gray-500">手动添加</div>
+                </div>
+                <div onclick="switchSubPage('addSport')" class="bg-white rounded-xl p-5 card-shadow text-center cursor-pointer">
+                    <div class="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-3">
+                        <i class="fa fa-running text-primary text-xl"></i>
+                    </div>
+                    <div class="font-semibold text-gray-800">运动录入</div>
+                    <div class="text-sm text-gray-500 mt-2">上传运动截图</div>
+                </div>
+                <div onclick="switchSubPage('targetSet')" class="bg-white rounded-xl p-5 card-shadow text-center cursor-pointer">
+                    <div class="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-3">
+                        <i class="fa fa-check-circle text-primary text-xl"></i>
+                    </div>
+                    <div class="font-semibold text-gray-800">目标设置</div>
+                    <div class="text-sm text-gray-500 mt-2">录入运动消耗</div>
+                </div>
+            </div>
+        </div>
 
-    <div class="dashboard-item">
-      <span>🍽️ 食物总摄入</span>
-      <span id="foodCal">0 kcal</span>
+        <!-- 添加食物子页面 -->
+        <div id="sub-addFood" class="sub-page hidden">
+            <div class="bg-teal-100 px-4 py-5 flex justify-between items-center">
+                <button onclick="backHome()" class="text-gray-800"><i class="fa fa-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-bold">添加食物</h2>
+                <div class="flex gap-3">
+                    <button class="text-gray-600"><i class="fa fa-ellipsis-h"></i></button>
+                    <button class="text-gray-600"><i class="fa fa-share-alt"></i></button>
+                    <button class="text-primary font-medium">保存</button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="bg-white rounded-xl p-6 card-shadow mb-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4">
+                        <i class="fa fa-check-square-o text-gray-400 text-3xl"></i>
+                        <p class="text-gray-500 mt-2">拍照上传食物图片</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="flex-1 border border-gray-300 rounded-lg py-2">拍照识别</button>
+                        <button class="flex-1 bg-darkCard text-white rounded-lg py-2">从相册选择</button>
+                    </div>
+                </div>
+                <div class="bg-teal-50 rounded-xl p-4 mb-4 card-shadow">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fa fa-microphone text-darkCard"></i>
+                        <span class="font-semibold">语音描述</span>
+                        <span class="ml-auto w-3 h-3 rounded-full bg-orange-500"></span>
+                    </div>
+                    <textarea id="foodVoiceInput" class="w-full border rounded-lg p-3 text-sm" placeholder="喝了一杯茉莉奶白，少冰，三分糖，中杯">喝了一杯茉莉奶白，少冰，三分糖，中杯</textarea>
+                    <button class="mt-2 border border-blue-500 text-blue-600 rounded-lg px-3 py-1 text-sm">识别并查询热量</button>
+                </div>
+                <div class="space-y-3 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">食物名称</label>
+                        <input type="text" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">规格</label>
+                        <input type="text" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">热量</label>
+                        <select class="w-full border rounded-lg p-2">
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">时间</label>
+                        <input type="date" class="w-full border rounded-lg p-2">
+                    </div>
+                </div>
+                <button class="w-full bg-blue-600 text-white rounded-xl py-3 font-medium">保存到今日记录</button>
+            </div>
+        </div>
+
+        <!-- 运动录入子页面 -->
+        <div id="sub-addSport" class="sub-page hidden">
+            <div class="bg-white px-4 py-5 flex justify-between items-center">
+                <button onclick="backHome()" class="text-gray-800"><i class="fa fa-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-bold">运动录入</h2>
+                <div class="flex gap-3">
+                    <button class="text-gray-600"><i class="fa fa-ellipsis-h"></i></button>
+                    <button class="text-gray-600"><i class="fa fa-share-alt"></i></button>
+                    <button class="text-primary font-medium">保存</button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="bg-blue-500 rounded-xl p-4 text-white flex justify-between items-center mb-4">
+                    <div>
+                        <p class="text-lg font-medium">上传运动截图</p>
+                    </div>
+                    <button class="bg-white text-blue-600 px-4 py-2 rounded-lg">选择图片</button>
+                </div>
+                <div class="bg-white rounded-xl p-4 card-shadow mb-4">
+                    <div class="grid grid-cols-3 text-center border-b pb-2 mb-2">
+                        <div class="text-primary font-medium">运动类型</div>
+                        <div>运动时长</div>
+                        <div>消耗热量</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center py-2">
+                        <div>快走</div>
+                        <div>40 分钟</div>
+                        <div>180 kcal</div>
+                        <div class="col-span-3 text-right">
+                            <button class="text-gray-400"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-teal-400 to-blue-400 rounded-xl p-5 text-white mb-4 card-shadow">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold">今日汇总</h3>
+                        <button><i class="fa fa-minus-circle"></i></button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                            <div class="text-sm opacity-90">今日运动消耗</div>
+                            <div class="text-lg font-semibold">320 kcal</div>
+                        </div>
+                        <div>
+                            <div class="text-sm opacity-90">食物摄入</div>
+                            <div class="text-lg font-semibold">1600 kcal</div>
+                        </div>
+                        <div>
+                            <div class="text-sm opacity-90">目标摄入</div>
+                            <div class="text-lg font-semibold">1500 kcal</div>
+                        </div>
+                    </div>
+                    <div class="bg-white text-gray-800 rounded-full text-center py-2 mt-3 font-medium">
+                        当前超出 100 kcal
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <svg class="w-16 h-16 ring-progress" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#334b66" stroke-width="8"/>
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#22c59e" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="120"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-gray-800">减少精制碳水，</p>
+                        <p class="font-semibold text-gray-800">增加快走或有氧运动</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 目标设置子页面（简易版） -->
+        <div id="sub-targetSet" class="sub-page hidden">
+            <div class="bg-white px-4 py-5 flex justify-between items-center">
+                <button onclick="backHome()" class="text-gray-800"><i class="fa fa-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-bold">目标设置</h2>
+                <div class="flex gap-3">
+                    <button class="text-gray-600"><i class="fa fa-ellipsis-h"></i></button>
+                    <button class="text-gray-600"><i class="fa fa-share-alt"></i></button>
+                    <button class="text-primary font-medium">保存</button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="bg-white rounded-xl p-5 card-shadow">
+                    <label class="block mb-2 font-medium">每日目标热量 (kcal)</label>
+                    <input id="setTargetCal" type="number" value="1500" class="w-full border rounded-lg p-2">
+                    <button class="mt-3 w-full bg-primary text-white rounded-lg py-2">保存目标</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 记录页面 -->
+        <div id="page-record" class="page hidden px-4 py-6">
+            <h2 class="text-xl font-bold mb-4">记录</h2>
+            <div class="text-gray-500">所有饮食、运动记录展示在这里</div>
+        </div>
+
+        <!-- 统计页面 -->
+        <div id="page-stat" class="page hidden px-4 py-6">
+            <h2 class="text-xl font-bold mb-4">统计</h2>
+            <div class="text-gray-500">热量趋势图表、周/月汇总</div>
+        </div>
+
+        <!-- 我的（设置页，把原来图四的后台放这里） -->
+        <div id="page-mine" class="page hidden px-4 py-6">
+            <h2 class="text-xl font-bold mb-4">我的</h2>
+            <div class="bg-white rounded-xl p-5 card-shadow space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">每日目标摄入热量(kcal)</label>
+                    <input id="mineTarget" type="number" class="w-full border rounded-lg p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">火山方舟 ARK Key</label>
+                    <input id="arkKey" type="text" class="w-full border rounded-lg p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">FatSecret Key</label>
+                    <input id="fatKey" type="text" class="w-full border rounded-lg p-2">
+                </div>
+                <div class="flex gap-3">
+                    <button class="flex-1 border rounded-lg py-2">导出备份</button>
+                    <button class="flex-1 border rounded-lg py-2">导入备份</button>
+                </div>
+                <button class="w-full bg-primary text-white rounded-lg py-2">保存设置</button>
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 max-w-md mx-auto">
+            <div class="grid grid-cols-4 py-2">
+                <div onclick="switchTab('home')" class="tab-item text-center py-2 tab-active">
+                    <i class="fa fa-home text-xl"></i>
+                    <div class="text-xs mt-1">首页</div>
+                </div>
+                <div onclick="switchTab('record')" class="tab-item text-center py-2 text-gray-500">
+                    <i class="fa fa-list-check text-xl"></i>
+                    <div class="text-xs mt-1">记录</div>
+                </div>
+                <div onclick="switchTab('stat')" class="tab-item text-center py-2 text-gray-500">
+                    <i class="fa fa-bar-chart text-xl"></i>
+                    <div class="text-xs mt-1">统计</div>
+                </div>
+                <div onclick="switchTab('mine')" class="tab-item text-center py-2 text-gray-500">
+                    <i class="fa fa-user text-xl"></i>
+                    <div class="text-xs mt-1">我的</div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="dashboard-item">
-      <span>🏃 运动总消耗</span>
-      <span id="sportCal">0 kcal</span>
-    </div>
-    <div class="dashboard-item">
-      <span>✅ 今日净摄入</span>
-      <span id="netCal">0 kcal</span>
-    </div>
-    <div class="dashboard-item">
-      <span>⚖️ 能量缺口</span>
-      <span id="gapCal" class="green">0 kcal</span>
-    </div>
-    <div class="dashboard-item">
-      <span>📌 还可摄入额度</span>
-      <span id="remainCal" class="green">0 kcal</span>
-    </div>
-  </div>
-  <div class="card">
-    <div class="title">📝 今日记录</div>
-    <div id="todayLog"></div>
-  </div>
-  <div class="card">
-    <div class="title">💾 备份管理</div>
-    <div class="row">
-      <button onclick="exportData()">导出备份</button>
-      <button class="secondary" onclick="importData()">导入备份</button>
-      <input type="file" id="importFile" style="display:none" accept=".json" onchange="handleImport(this)">
-    </div>
-  </div>
-</div>
 
-<!-- 食物录入 -->
-<div id="page-food" class="page">
-  <div class="card">
-    <div class="title">🍜 添加食物</div>
-    <div class="api-tip">文字查询调用火山方舟；语音直接口述食物名称（例：茉莉奶白少冰三分糖中杯）</div>
-    <div class="upload-box" onclick="document.getElementById('foodImg').click()">
-      <p>📷 点击上传食物照片（图片识别待接入）</p >
-      <input type="file" id="foodImg" accept="image/*" capture="environment" style="display:none" onchange="previewFoodImg(this)">
-    </div>
-    < img id="previewImg">
-    <button class="success" onclick="startVoiceFood()">🎤 语音录入</button>
-    <textarea id="foodText" placeholder="或者手动输入：茉莉奶白 中杯 三分糖 少冰"></textarea>
-    <button onclick="searchFoodCal()">🔍 查询热量</button>
-    <div id="foodResult" class="grey"></div>
-    <input type="number" id="foodCalInput" placeholder="手动填入热量 kcal">
-    <button onclick="addFood()">✅ 保存这条食物记录</button>
-  </div>
-</div>
+    <script>
+        // 页面切换
+        const pageList = ['home','record','stat','mine'];
+        const subList = ['addFood','addSport','targetSet'];
 
-<!-- 运动录入 -->
-<div id="page-sport" class="page">
-  <div class="card">
-    <div class="title">🏃 添加运动</div>
-    <div class="upload-box" onclick="document.getElementById('sportImg').click()">
-      <p>📷 上传运动截图</p >
-      <input type="file" id="sportImg" accept="image/*" capture="environment" style="display:none" onchange="previewSportImg(this)">
-    </div>
-    <textarea id="sportText" placeholder="文字录入运动，例：快走40分钟 / 帕梅拉20分钟"></textarea>
-    <input type="number" id="sportCalInput" placeholder="消耗热量 kcal">
-    <button onclick="addSport()">✅ 保存运动记录</button>
-  </div>
-</div>
+        function switchTab(tabName) {
+            // 隐藏所有主页面
+            document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+            // 隐藏所有子页面
+            document.querySelectorAll('.sub-page').forEach(p=>p.classList.add('hidden'));
+            document.getElementById('page-'+tabName).classList.remove('hidden');
+            // 重置tab样式
+            document.querySelectorAll('.tab-item').forEach(item=>{
+                item.classList.remove('tab-active');
+                item.classList.add('text-gray-500');
+            })
+            event.currentTarget.classList.add('tab-active');
+            event.currentTarget.classList.remove('text-gray-500');
+        }
 
-<!-- 设置页 -->
-<div id="page-setting" class="page">
-  <div class="card">
-    <div class="title">⚙️ 基础设置</div>
-    <label>每日目标摄入热量(kcal)</label>
-    <input type="number" id="targetInput" value="1500">
-    <div class="api-tip">豆包视觉API Key 填入火山方舟 ARK Key，留空则仅手动填热量</div>
-    <label>FatSecret Key</label>
-    <input type="text" id="fatsecretKey" placeholder="FatSecret Consumer Key">
-    <label>火山方舟 ARK Key</label>
-    <input type="text" id="doubaoVisionKey" placeholder="ark-xxxx">
-    <button onclick="saveSetting()">💾 保存设置</button>
-  </div>
-</div>
+        function switchSubPage(subName) {
+            document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+            document.querySelectorAll('.sub-page').forEach(p=>p.classList.add('hidden'));
+            document.getElementById('sub-'+subName).classList.remove('hidden');
+        }
 
-<!-- 底部标签栏 -->
-<div class="tab-bar">
-  <div class="tab-item active" onclick="switchPage('dashboard')">看板</div>
-  <div class="tab-item" onclick="switchPage('food')">食物</div>
-  <div class="tab-item" onclick="switchPage('sport')">运动</div>
-  <div class="tab-item" onclick="switchPage('setting')">设置</div>
-</div>
+        function backHome() {
+            document.querySelectorAll('.sub-page').forEach(p=>p.classList.add('hidden'));
+            document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+            document.getElementById('page-home').classList.remove('hidden');
+            // 重置tab激活
+            document.querySelectorAll('.tab-item').forEach(item=>{
+                item.classList.remove('tab-active');
+                item.classList.add('text-gray-500');
+            })
+            document.querySelector('.tab-item').classList.add('tab-active');
+            document.querySelector('.tab-item').classList.remove('text-gray-500');
+        }
 
-<script>
-// 全局数据
-let appData = JSON.parse(localStorage.getItem('calData')) || {
-  targetCal:1500,
-  fatsecretKey:"",
-  doubaoVisionKey:"",
-  records:[]
-};
-const ARK_MODEL_ID = "doubao-seed-2-1-pro-260915";
-
-// 页面切换
-function switchPage(pageName){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+pageName).classList.add('active');
-  document.querySelectorAll('.tab-item').forEach((t,i)=>t.classList.remove('active'));
-  event.target.classList.add('active');
-}
-// 渲染看板
-function renderDashboard(){
-  const today = new Date().toLocaleDateString();
-  const todayRec = appData.records.filter(r=>r.date===today);
-  let foodSum = todayRec.filter(r=>r.type==='food').reduce((a,b)=>a+b.cal,0);
-  let sportSum = todayRec.filter(r=>r.type==='sport').reduce((a,b)=>a+b.cal,0);
-  let net = foodSum - sportSum;
-  let gap = appData.targetCal - net;
-  document.getElementById('targetCal').innerText = appData.targetCal + ' kcal';
-  document.getElementById('foodCal').innerText = foodSum + ' kcal';
-  document.getElementById('sportCal').innerText = sportSum + ' kcal';
-  document.getElementById('netCal').innerText = net + ' kcal';
-  const gapDom = document.getElementById('gapCal');
-  gapDom.innerText = gap + ' kcal';
-  gapDom.className = gap >=0 ? 'green' : 'red';
-  document.getElementById('remainCal').innerText = gap + ' kcal';
-  document.getElementById('remainCal').className = gap >=0 ? 'green' : 'red';
-  // 渲染日志
-  const logDom = document.getElementById('todayLog');
-  logDom.innerHTML = '';
-  todayRec.forEach((item,idx)=>{
-    logDom.innerHTML += `<div class="log-item">${item.type==='food'?'🍽️':'🏃'} ${item.desc} <span class="grey">${item.cal} kcal</span> <button style="padding:4px 6px;font-size:12px" onclick="delRec(${todayRec.indexOf(item)})">删除</button></div>`
-  })
-}
-// 保存设置
-function saveSetting(){
-  appData.targetCal = Number(document.getElementById('targetInput').value);
-  appData.fatsecretKey = document.getElementById('fatsecretKey').value;
-  appData.doubaoVisionKey = document.getElementById('doubaoVisionKey').value;
-  localStorage.setItem('calData',JSON.stringify(appData));
-  alert('设置保存成功！');
-  renderDashboard();
-}
-// 语音识别录入食物
-function startVoiceFood(){
-  if(!window.webkitSpeechRecognition && !window.SpeechRecognition){
-    alert('你的浏览器不支持语音识别！');
-    return;
-  }
-  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const rec = new Rec();
-  rec.lang = 'zh-CN';
-  rec.start();
-  rec.onresult = (e)=>{
-    const text = e.results[0][0].transcript;
-    document.getElementById('foodText').value = text;
-    rec.stop();
-  }
-}
-// 食物图片预览
-function previewFoodImg(input){
-  const file = input.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    document.getElementById('previewImg').src = e.target.result;
-    document.getElementById('previewImg').style.display='block';
-  }
-  reader.readAsDataURL(file);
-}
-function previewSportImg(input){}
-
-// 方舟 AI 查询热量
-async function searchFoodCal(){
-  const text = document.getElementById('foodText').value.trim();
-  if(!text){alert('请输入食物描述');return;}
-  const arkKey = appData.doubaoVisionKey.trim();
-  if(!arkKey){
-    document.getElementById('foodResult').innerText = '未填写方舟密钥，仅可手动填入热量';
-    return;
-  }
-  document.getElementById('foodResult').innerText = '正在请求方舟估算热量...';
-  try {
-    const resp = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":"Bearer " + arkKey
-      },
-      body:JSON.stringify({
-        model: ARK_MODEL_ID,
-        messages:[
-          {
-            role:"user",
-            content:`你是营养师，估算这份食物的热量，输出格式：热量 kcal、碳水(g)、蛋白质(g)、脂肪(g)，只给结果，不要多余话：${text}`
-          }
-        ]
-      })
-    })
-    const json = await resp.json();
-    if(json.error){
-      document.getElementById('foodResult').innerText = "接口返回错误：" + JSON.stringify(json.error);
-      return;
-    }
-    const reply = json.choices?.[0]?.message?.content || "无返回内容";
-    document.getElementById('foodResult').innerText = reply;
-  } catch (err) {
-    document.getElementById('foodResult').innerText = "请求失败，大概率跨域 CORS：" + err.message;
-  }
-}
-
-// 添加食物记录
-function addFood(){
-  const cal = Number(document.getElementById('foodCalInput').value);
-  const desc = document.getElementById('foodText').value || '食物';
-  if(!cal){alert('请填写热量');return;}
-  appData.records.push({
-    date:new Date().toLocaleDateString(),
-    type:'food',
-    desc:desc,
-    cal:cal
-  });
-  localStorage.setItem('calData',JSON.stringify(appData));
-  alert('食物记录保存成功！');
-  document.getElementById('foodCalInput').value='';
-  document.getElementById('foodText').value='';
-  renderDashboard();
-  switchPage('dashboard');
-}
-// 添加运动
-function addSport(){
-  const cal = Number(document.getElementById('sportCalInput').value);
-  const desc = document.getElementById('sportText').value || '运动';
-  if(!cal){alert('填写消耗热量');return;}
-  appData.records.push({
-    date:new Date().toLocaleDateString(),
-    type:'sport',
-    desc:desc,
-    cal:cal
-  });
-  localStorage.setItem('calData',JSON.stringify(appData));
-  alert('运动记录保存成功！');
-  document.getElementById('sportCalInput').value='';
-  document.getElementById('sportText').value='';
-  renderDashboard();
-  switchPage('dashboard');
-}
-// 删除记录
-function delRec(idx){
-  const today = new Date().toLocaleDateString();
-  const todayRec = appData.records.filter(r=>r.date===today);
-  const delItem = todayRec[idx];
-  const allIdx = appData.records.findIndex(x=>x.date===delItem.date && x.type===delItem.type && x.desc===delItem.desc && x.cal===delItem.cal);
-  appData.records.splice(allIdx,1);
-  localStorage.setItem('calData',JSON.stringify(appData));
-  renderDashboard();
-}
-// 导出导入
-function exportData(){
-  const blob = new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
-  const a = document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='cal-backup.json';
-  a.click();
-}
-function importData(){document.getElementById('importFile').click();}
-function handleImport(fileDom){
-  const f = fileDom.files[0];
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    try{
-      const data = JSON.parse(e.target.result);
-      appData = data;
-      localStorage.setItem('calData',JSON.stringify(appData));
-      alert('导入成功！');
-      renderDashboard();
-    }catch(err){alert('备份文件损坏！')}
-  }
-  reader.readAsText(f);
-}
-// 初始化
-window.onload = ()=>{
-  document.getElementById('targetInput').value = appData.targetCal;
-  document.getElementById('fatsecretKey').value = appData.fatsecretKey;
-  document.getElementById('doubaoVisionKey').value = appData.doubaoVisionKey;
-  renderDashboard();
-}
-</script>
+        // 本地存储、火山方舟调用逻辑你后续可以继续接入
+        function loadLocal() {
+            const saved = localStorage.getItem('calConfig');
+            if(saved) {
+                const cfg = JSON.parse(saved);
+                document.getElementById('mineTarget').value = cfg.target || 1500;
+                document.getElementById('arkKey').value = cfg.arkKey || '';
+                document.getElementById('fatKey').value = cfg.fatKey || '';
+            }
+        }
+        loadLocal();
+    </script>
 </body>
 </html>
