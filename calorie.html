@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>减脂热量工作台</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, -apple-system, sans-serif;}
+body{background:#f7f9fa;padding:16px;color:#222;padding-bottom:80px;}
+.card{background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,0.08);}
+.title{font-size:20px;font-weight:700;margin-bottom:12px;}
+.sub-title{font-size:14px;color:#666;margin-bottom:10px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;}
+button{padding:11px 14px;border:none;border-radius:12px;background:#2563eb;color:#fff;font-size:15px;font-weight:500;cursor:pointer;}
+button.secondary{background:#6b7280;}
+button.success{background:#16a34a;}
+button.warning{background:#f59e0b;}
+input,textarea,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:12px;margin:8px 0;font-size:15px;outline:none;}
+.dashboard-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f1f1;}
+.dashboard-item:last-child{border-bottom:none;}
+.green{color:#16a34a;font-weight:bold;}
+.red{color:#dc2626;font-weight:bold;}
+.grey{color:#666;}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #eee;z-index:99;}
+.tab-item{flex:1;text-align:center;padding:12px 0;font-size:14px;color:#666;}
+.tab-item.active{color:#2563eb;font-weight:600;}
+.page{display:none;}
+.page.active{display:block;}
+.upload-box{border:2px dashed #ccc;border-radius:12px;padding:24px;text-align:center;margin:10px 0;}
+#previewImg{max-width:100%;border-radius:12px;margin:10px 0;display:none;}
+.log-item{padding:10px 0;border-bottom:1px solid #f1f1f1;}
+.api-tip{background:#eff6ff;padding:10px;border-radius:10px;font-size:13px;color:#1e40af;margin:10px 0;}
+</style>
+</head>
+<body>
+<!-- 首页仪表盘 -->
+<div id="page-dashboard" class="page active">
+  <div class="card">
+    <div class="title">📊 今日热量看板</div>
+    <div class="dashboard-item">
+      <span>每日目标摄入</span>
+      <span id="targetCal">1500 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>🍽️ 食物总摄入</span>
+      <span id="foodCal">0 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>🏃 运动总消耗</span>
+      <span id="sportCal">0 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>✅ 今日净摄入</span>
+      <span id="netCal">0 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>⚖️ 能量缺口</span>
+      <span id="gapCal" class="green">0 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>📌 还可摄入额度</span>
+      <span id="remainCal" class="green">0 kcal</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="title">📝 今日记录</div>
+    <div id="todayLog"></div>
+  </div>
+  <div class="card">
+    <div class="title">💾 备份管理</div>
+    <div class="row">
+      <button onclick="exportData()">导出备份</button>
+      <button class="secondary" onclick="importData()">导入备份</button>
+      <input type="file" id="importFile" style="display:none" accept=".json" onchange="handleImport(this)">
+    </div>
+  </div>
+</div>
+
+<!-- 食物录入 -->
+<div id="page-food" class="page">
+  <div class="card">
+    <div class="title">🍜 添加食物</div>
+    <div class="api-tip">拍照识别需要配置豆包视觉API；语音直接口述食物名称（例：茉莉奶白少冰三分糖中杯）</div>
+    <div class="upload-box" onclick="document.getElementById('foodImg').click()">
+      <p>📷 点击上传食物照片</p >
+      <input type="file" id="foodImg" accept="image/*" capture="environment" style="display:none" onchange="previewFoodImg(this)">
+    </div>
+    < img id="previewImg">
+    <button class="success" onclick="startVoiceFood()">🎤 语音录入</button>
+    <textarea id="foodText" placeholder="或者手动输入：茉莉奶白 中杯 三分糖 少冰"></textarea>
+    <button onclick="searchFoodCal()">🔍 查询热量</button>
+    <div id="foodResult" class="grey"></div>
+    <input type="number" id="foodCalInput" placeholder="手动填入热量 kcal">
+    <button onclick="addFood()">✅ 保存这条食物记录</button>
+  </div>
+</div>
+
+<!-- 运动录入 -->
+<div id="page-sport" class="page">
+  <div class="card">
+    <div class="title">🏃 添加运动</div>
+    <div class="upload-box" onclick="document.getElementById('sportImg').click()">
+      <p>📷 上传运动截图</p >
+      <input type="file" id="sportImg" accept="image/*" capture="environment" style="display:none" onchange="previewSportImg(this)">
+    </div>
+    <textarea id="sportText" placeholder="文字录入运动，例：快走40分钟 / 帕梅拉20分钟"></textarea>
+    <input type="number" id="sportCalInput" placeholder="消耗热量 kcal">
+    <button onclick="addSport()">✅ 保存运动记录</button>
+  </div>
+</div>
+
+<!-- 设置页 -->
+<div id="page-setting" class="page">
+  <div class="card">
+    <div class="title">⚙️ 基础设置</div>
+    <label>每日目标摄入热量(kcal)</label>
+    <input type="number" id="targetInput" value="1500">
+    <div class="api-tip">下面填入你的API密钥，留空则仅手动填热量</div>
+    <label>FatSecret Key</label>
+    <input type="text" id="fatsecretKey" placeholder="FatSecret Consumer Key">
+    <label>豆包视觉API Key</label>
+    <input type="text" id="doubaoVisionKey" placeholder="豆包视觉API Key">
+    <button onclick="saveSetting()">💾 保存设置</button>
+  </div>
+</div>
+
+<!-- 底部标签栏 -->
+<div class="tab-bar">
+  <div class="tab-item active" onclick="switchPage('dashboard')">看板</div>
+  <div class="tab-item" onclick="switchPage('food')">食物</div>
+  <div class="tab-item" onclick="switchPage('sport')">运动</div>
+  <div class="tab-item" onclick="switchPage('setting')">设置</div>
+</div>
+
+<script>
+// 全局数据
+let appData = JSON.parse(localStorage.getItem('calData')) || {
+  targetCal:1500,
+  fatsecretKey:"",
+  doubaoVisionKey:"",
+  records:[]
+};
+// 页面切换
+function switchPage(pageName){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+pageName).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach((t,i)=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+// 渲染看板
+function renderDashboard(){
+  const today = new Date().toLocaleDateString();
+  const todayRec = appData.records.filter(r=>r.date===today);
+  let foodSum = todayRec.filter(r=>r.type==='food').reduce((a,b)=>a+b.cal,0);
+  let sportSum = todayRec.filter(r=>r.type==='sport').reduce((a,b)=>a+b.cal,0);
+  let net = foodSum - sportSum;
+  let gap = appData.targetCal - net;
+  document.getElementById('targetCal').innerText = appData.targetCal + ' kcal';
+  document.getElementById('foodCal').innerText = foodSum + ' kcal';
+  document.getElementById('sportCal').innerText = sportSum + ' kcal';
+  document.getElementById('netCal').innerText = net + ' kcal';
+  const gapDom = document.getElementById('gapCal');
+  gapDom.innerText = gap + ' kcal';
+  gapDom.className = gap >=0 ? 'green' : 'red';
+  document.getElementById('remainCal').innerText = gap + ' kcal';
+  document.getElementById('remainCal').className = gap >=0 ? 'green' : 'red';
+  // 渲染日志
+  const logDom = document.getElementById('todayLog');
+  logDom.innerHTML = '';
+  todayRec.forEach((item,idx)=>{
+    logDom.innerHTML += `<div class="log-item">${item.type==='food'?'🍽️':'🏃'} ${item.desc} <span class="grey">${item.cal} kcal</span> <button style="padding:4px 6px;font-size:12px" onclick="delRec(${todayRec.indexOf(item)})">删除</button></div>`
+  })
+}
+// 保存设置
+function saveSetting(){
+  appData.targetCal = Number(document.getElementById('targetInput').value);
+  appData.fatsecretKey = document.getElementById('fatsecretKey').value;
+  appData.doubaoVisionKey = document.getElementById('doubaoVisionKey').value;
+  localStorage.setItem('calData',JSON.stringify(appData));
+  alert('设置保存成功！');
+  renderDashboard();
+}
+// 语音识别录入食物
+function startVoiceFood(){
+  if(!window.webkitSpeechRecognition && !window.SpeechRecognition){
+    alert('你的浏览器不支持语音识别！');
+    return;
+  }
+  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new Rec();
+  rec.lang = 'zh-CN';
+  rec.start();
+  rec.onresult = (e)=>{
+    const text = e.results[0][0].transcript;
+    document.getElementById('foodText').value = text;
+    rec.stop();
+  }
+}
+// 食物图片预览
+function previewFoodImg(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewImg').style.display='block';
+  }
+  reader.readAsDataURL(file);
+}
+function previewSportImg(input){}
+// 模拟查询热量（这里预留API调用位置，密钥填好后我再补对接FatSecret请求代码）
+function searchFoodCal(){
+  const text = document.getElementById('foodText').value.trim();
+  if(!text){alert('请输入食物描述');return;}
+  document.getElementById('foodResult').innerText = `【${text}】正在查询，当前为模拟，填入密钥后自动联网查询`;
+}
+// 添加食物记录
+function addFood(){
+  const cal = Number(document.getElementById('foodCalInput').value);
+  const desc = document.getElementById('foodText').value || '食物';
+  if(!cal){alert('请填写热量');return;}
+  appData.records.push({
+    date:new Date().toLocaleDateString(),
+    type:'food',
+    desc:desc,
+    cal:cal
+  });
+  localStorage.setItem('calData',JSON.stringify(appData));
+  alert('食物记录保存成功！');
+  document.getElementById('foodCalInput').value='';
+  document.getElementById('foodText').value='';
+  renderDashboard();
+  switchPage('dashboard');
+}
+// 添加运动
+function addSport(){
+  const cal = Number(document.getElementById('sportCalInput').value);
+  const desc = document.getElementById('sportText').value || '运动';
+  if(!cal){alert('填写消耗热量');return;}
+  appData.records.push({
+    date:new Date().toLocaleDateString(),
+    type:'sport',
+    desc:desc,
+    cal:cal
+  });
+  localStorage.setItem('calData',JSON.stringify(appData));
+  alert('运动记录保存成功！');
+  document.getElementById('sportCalInput').value='';
+  document.getElementById('sportText').value='';
+  renderDashboard();
+  switchPage('dashboard');
+}
+// 删除记录
+function delRec(idx){
+  const today = new Date().toLocaleDateString();
+  const todayRec = appData.records.filter(r=>r.date===today);
+  const delItem = todayRec[idx];
+  const allIdx = appData.records.findIndex(x=>x.date===delItem.date && x.type===delItem.type && x.desc===delItem.desc && x.cal===delItem.cal);
+  appData.records.splice(allIdx,1);
+  localStorage.setItem('calData',JSON.stringify(appData));
+  renderDashboard();
+}
+// 导出导入
+function exportData(){
+  const blob = new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='cal-backup.json';
+  a.click();
+}
+function importData(){document.getElementById('importFile').click();}
+function handleImport(fileDom){
+  const f = fileDom.files[0];
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      appData = data;
+      localStorage.setItem('calData',JSON.stringify(appData));
+      alert('导入成功！');
+      renderDashboard();
+    }catch(err){alert('备份文件损坏！')}
+  }
+  reader.readAsText(f);
+}
+// 初始化
+window.onload = ()=>{
+  document.getElementById('targetInput').value = appData.targetCal;
+  document.getElementById('fatsecretKey').value = appData.fatsecretKey;
+  document.getElementById('doubaoVisionKey').value = appData.doubaoVisionKey;
+  renderDashboard();
+}
+</script>
+</body>
+</html>
