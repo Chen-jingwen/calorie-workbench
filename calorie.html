@@ -1,245 +1,289 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>食物热量计算器</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, sans-serif;
-        }
-        body {
-            background: #f5f7fa;
-            padding: 20px;
-        }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            background: #fff;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        h1 {
-            text-align: center;
-            color: #222;
-            margin-bottom: 24px;
-            font-size: 22px;
-        }
-        .setting-block {
-            background: #f0f4ff;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        .setting-block h3 {
-            margin-bottom: 12px;
-            font-size: 16px;
-        }
-        .form-item {
-            margin-bottom: 12px;
-        }
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 14px;
-            color: #333;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d8dee9;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin: 16px 0;
-        }
-        button {
-            flex: 1;
-            padding: 11px;
-            border: none;
-            border-radius: 8px;
-            background: #2563eb;
-            color: white;
-            font-size: 15px;
-            cursor: pointer;
-        }
-        button.secondary {
-            background: #6b7280;
-        }
-        button:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-        }
-        .upload-area {
-            border: 2px dashed #cbd5e1;
-            border-radius: 12px;
-            padding: 30px 10px;
-            text-align: center;
-            cursor: pointer;
-            margin: 16px 0;
-        }
-        .upload-area:hover {
-            border-color: #2563eb;
-        }
-        #preview-img {
-            max-width: 100%;
-            max-height: 300px;
-            margin-top: 12px;
-            border-radius: 8px;
-        }
-        .result-box {
-            margin-top: 20px;
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 12px;
-            min-height: 80px;
-            white-space: pre-wrap;
-        }
-        .tip {
-            font-size: 12px;
-            color: #666;
-            margin-top: 8px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🍱 食物热量 AI 估算器</h1>
-        <div class="setting-block">
-            <h3>🔧 模型设置（填入你的方舟信息）</h3>
-            <div class="form-item">
-                <label>ARK API Key</label>
-                <input id="apiKey" placeholder="ark-xxx">
-            </div>
-            <div class="form-item">
-                <label>模型 ID</label>
-                <input id="modelId" placeholder="doubao-seed-2-1-pro-q">
-            </div>
-            <button id="saveSetting">保存设置</button>
-            <div class="tip">密钥保存在浏览器本地，不会上传其他服务器</div>
-        </div>q
 
-        <div class="form-item">
-            <label>文字描述食物（例如：茉莉奶白少冰三分糖中杯）</label>
-            <textarea id="foodText" rows="3" placeholder="输入食物名称"></textarea>
-        </div>
-        <button id="askTextBtn">AI 查询热量</button>
-
-        <div class="upload-area" id="uploadBox">
-            <p>点击上传食物图片（识别图片热量）</p >
-            <input type="file" id="fileInput" accept="image/*" hidden>
-            < img id="preview-img" />
-        </div>
-        <button id="askImgBtn" disabled>识别图片食物热量</button>
-
-        <div class="result-box" id="resultBox">结果会展示在这里</div>
+    <div class="dashboard-item">
+      <span>🍽️ 食物总摄入</span>
+      <span id="foodCal">0 kcal</span>
     </div>
+    <div class="dashboard-item">
+      <span>🏃 运动总消耗</span>
+      <span id="sportCal">0 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>✅ 今日净摄入</span>
+      <span id="netCal">0 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>⚖️ 能量缺口</span>
+      <span id="gapCal" class="green">0 kcal</span>
+    </div>
+    <div class="dashboard-item">
+      <span>📌 还可摄入额度</span>
+      <span id="remainCal" class="green">0 kcal</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="title">📝 今日记录</div>
+    <div id="todayLog"></div>
+  </div>
+  <div class="card">
+    <div class="title">💾 备份管理</div>
+    <div class="row">
+      <button onclick="exportData()">导出备份</button>
+      <button class="secondary" onclick="importData()">导入备份</button>
+      <input type="file" id="importFile" style="display:none" accept=".json" onchange="handleImport(this)">
+    </div>
+  </div>
+</div>
 
-    <script>
-        const API_KEY_INPUT = document.getElementById('apiKey');
-        const MODEL_ID_INPUT = document.getElementById('modelId');
-        const SAVE_BTN = document.getElementById('saveSetting');
-        const FOOD_TEXT = document.getElementById('foodText');
-        const ASK_TEXT_BTN = document.getElementById('askTextBtn');
-        const UPLOAD_BOX = document.getElementById('uploadBox');
-        const FILE_INPUT = document.getElementById('fileInput');
-        const PREVIEW_IMG = document.getElementById('preview-img');
-        const ASK_IMG_BTN = document.getElementById('askImgBtn');
-        const RESULT_BOX = document.getElementById('resultBox');
+<!-- 食物录入 -->
+<div id="page-food" class="page">
+  <div class="card">
+    <div class="title">🍜 添加食物</div>
+    <div class="api-tip">文字查询调用火山方舟；语音直接口述食物名称（例：茉莉奶白少冰三分糖中杯）</div>
+    <div class="upload-box" onclick="document.getElementById('foodImg').click()">
+      <p>📷 点击上传食物照片（图片识别待接入）</p >
+      <input type="file" id="foodImg" accept="image/*" capture="environment" style="display:none" onchange="previewFoodImg(this)">
+    </div>
+    < img id="previewImg">
+    <button class="success" onclick="startVoiceFood()">🎤 语音录入</button>
+    <textarea id="foodText" placeholder="或者手动输入：茉莉奶白 中杯 三分糖 少冰"></textarea>
+    <button onclick="searchFoodCal()">🔍 查询热量</button>
+    <div id="foodResult" class="grey"></div>
+    <input type="number" id="foodCalInput" placeholder="手动填入热量 kcal">
+    <button onclick="addFood()">✅ 保存这条食物记录</button>
+  </div>
+</div>
 
-        let savedKey = localStorage.getItem('arkApiKey') || '';
-        let savedModel = localStorage.getItem('arkModelId') || 'doubao-seed-2-1-pro-260915';
-        let selectedImageBase64 = null;
+<!-- 运动录入 -->
+<div id="page-sport" class="page">
+  <div class="card">
+    <div class="title">🏃 添加运动</div>
+    <div class="upload-box" onclick="document.getElementById('sportImg').click()">
+      <p>📷 上传运动截图</p >
+      <input type="file" id="sportImg" accept="image/*" capture="environment" style="display:none" onchange="previewSportImg(this)">
+    </div>
+    <textarea id="sportText" placeholder="文字录入运动，例：快走40分钟 / 帕梅拉20分钟"></textarea>
+    <input type="number" id="sportCalInput" placeholder="消耗热量 kcal">
+    <button onclick="addSport()">✅ 保存运动记录</button>
+  </div>
+</div>
 
-        API_KEY_INPUT.value = savedKey;
-        MODEL_ID_INPUT.value = savedModel;
+<!-- 设置页 -->
+<div id="page-setting" class="page">
+  <div class="card">
+    <div class="title">⚙️ 基础设置</div>
+    <label>每日目标摄入热量(kcal)</label>
+    <input type="number" id="targetInput" value="1500">
+    <div class="api-tip">豆包视觉API Key 填入火山方舟 ARK Key，留空则仅手动填热量</div>
+    <label>FatSecret Key</label>
+    <input type="text" id="fatsecretKey" placeholder="FatSecret Consumer Key">
+    <label>火山方舟 ARK Key</label>
+    <input type="text" id="doubaoVisionKey" placeholder="ark-xxxx">
+    <button onclick="saveSetting()">💾 保存设置</button>
+  </div>
+</div>
 
-        SAVE_BTN.onclick = () => {
-            localStorage.setItem('arkApiKey', API_KEY_INPUT.value.trim());
-            localStorage.setItem('arkModelId', MODEL_ID_INPUT.value.trim());
-            alert('✅ 设置已保存');
-        }
+<!-- 底部标签栏 -->
+<div class="tab-bar">
+  <div class="tab-item active" onclick="switchPage('dashboard')">看板</div>
+  <div class="tab-item" onclick="switchPage('food')">食物</div>
+  <div class="tab-item" onclick="switchPage('sport')">运动</div>
+  <div class="tab-item" onclick="switchPage('setting')">设置</div>
+</div>
 
-        UPLOAD_BOX.onclick = () => FILE_INPUT.click();
-        FILE_INPUT.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                selectedImageBase64 = ev.target.result;
-                PREVIEW_IMG.src = selectedImageBase64;
-                ASK_IMG_BTN.disabled = false;
-            }
-            reader.readAsDataURL(file);
-        }
+<script>
+// 全局数据
+let appData = JSON.parse(localStorage.getItem('calData')) || {
+  targetCal:1500,
+  fatsecretKey:"",
+  doubaoVisionKey:"",
+  records:[]
+};
+const ARK_MODEL_ID = "doubao-seed-2-1-pro-260915";
 
-        async function callArkApi(content) {
-            const key = localStorage.getItem('arkApiKey');
-            const model = localStorage.getItem('arkModelId');
-            if (!key || !model) {
-                return '❌ 请先填写并保存 ARK API Key 和模型 ID';
-            }
-            const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${key}`
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: [
-                        {
-                            role: 'user',
-                            content: content
-                        }
-                    ]
-                })
-            })
-            const data = await resp.json();
-            if (data.error) {
-                return `❌ 接口报错：${JSON.stringify(data.error)}`;
-            }
-            return data.choices?.[0]?.message?.content || '无返回内容';
-        }
+// 页面切换
+function switchPage(pageName){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+pageName).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach((t,i)=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+// 渲染看板
+function renderDashboard(){
+  const today = new Date().toLocaleDateString();
+  const todayRec = appData.records.filter(r=>r.date===today);
+  let foodSum = todayRec.filter(r=>r.type==='food').reduce((a,b)=>a+b.cal,0);
+  let sportSum = todayRec.filter(r=>r.type==='sport').reduce((a,b)=>a+b.cal,0);
+  let net = foodSum - sportSum;
+  let gap = appData.targetCal - net;
+  document.getElementById('targetCal').innerText = appData.targetCal + ' kcal';
+  document.getElementById('foodCal').innerText = foodSum + ' kcal';
+  document.getElementById('sportCal').innerText = sportSum + ' kcal';
+  document.getElementById('netCal').innerText = net + ' kcal';
+  const gapDom = document.getElementById('gapCal');
+  gapDom.innerText = gap + ' kcal';
+  gapDom.className = gap >=0 ? 'green' : 'red';
+  document.getElementById('remainCal').innerText = gap + ' kcal';
+  document.getElementById('remainCal').className = gap >=0 ? 'green' : 'red';
+  // 渲染日志
+  const logDom = document.getElementById('todayLog');
+  logDom.innerHTML = '';
+  todayRec.forEach((item,idx)=>{
+    logDom.innerHTML += `<div class="log-item">${item.type==='food'?'🍽️':'🏃'} ${item.desc} <span class="grey">${item.cal} kcal</span> <button style="padding:4px 6px;font-size:12px" onclick="delRec(${todayRec.indexOf(item)})">删除</button></div>`
+  })
+}
+// 保存设置
+function saveSetting(){
+  appData.targetCal = Number(document.getElementById('targetInput').value);
+  appData.fatsecretKey = document.getElementById('fatsecretKey').value;
+  appData.doubaoVisionKey = document.getElementById('doubaoVisionKey').value;
+  localStorage.setItem('calData',JSON.stringify(appData));
+  alert('设置保存成功！');
+  renderDashboard();
+}
+// 语音识别录入食物
+function startVoiceFood(){
+  if(!window.webkitSpeechRecognition && !window.SpeechRecognition){
+    alert('你的浏览器不支持语音识别！');
+    return;
+  }
+  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new Rec();
+  rec.lang = 'zh-CN';
+  rec.start();
+  rec.onresult = (e)=>{
+    const text = e.results[0][0].transcript;
+    document.getElementById('foodText').value = text;
+    rec.stop();
+  }
+}
+// 食物图片预览
+function previewFoodImg(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewImg').style.display='block';
+  }
+  reader.readAsDataURL(file);
+}
+function previewSportImg(input){}
 
-        ASK_TEXT_BTN.onclick = async () => {
-            const text = FOOD_TEXT.value.trim();
-            if (!text) {
-                RESULT_BOX.textContent = '请输入食物描述';
-                return;
-            }
-            RESULT_BOX.textContent = '正在请求...';
-            const prompt = `你是专业营养师，估算这份食物的热量，给出热量 kcal、大致营养（碳水/蛋白/脂肪），简短清晰：${text}`;
-            const res = await callArkApi(prompt);
-            RESULT_BOX.textContent = res;
-        }
+// 方舟 AI 查询热量
+async function searchFoodCal(){
+  const text = document.getElementById('foodText').value.trim();
+  if(!text){alert('请输入食物描述');return;}
+  const arkKey = appData.doubaoVisionKey.trim();
+  if(!arkKey){
+    document.getElementById('foodResult').innerText = '未填写方舟密钥，仅可手动填入热量';
+    return;
+  }
+  document.getElementById('foodResult').innerText = '正在请求方舟估算热量...';
+  try {
+    const resp = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer " + arkKey
+      },
+      body:JSON.stringify({
+        model: ARK_MODEL_ID,
+        messages:[
+          {
+            role:"user",
+            content:`你是营养师，估算这份食物的热量，输出格式：热量 kcal、碳水(g)、蛋白质(g)、脂肪(g)，只给结果，不要多余话：${text}`
+          }
+        ]
+      })
+    })
+    const json = await resp.json();
+    if(json.error){
+      document.getElementById('foodResult').innerText = "接口返回错误：" + JSON.stringify(json.error);
+      return;
+    }
+    const reply = json.choices?.[0]?.message?.content || "无返回内容";
+    document.getElementById('foodResult').innerText = reply;
+  } catch (err) {
+    document.getElementById('foodResult').innerText = "请求失败，大概率跨域 CORS：" + err.message;
+  }
+}
 
-        ASK_IMG_BTN.onclick = async () => {
-            if (!selectedImageBase64) return;
-            RESULT_BOX.textContent = '正在识别图片...';
-            const base64 = selectedImageBase64.split(',')[1];
-            const content = [
-                {
-                    type: 'text',
-                    text: '识别图里的食物，估算热量，给出 kcal、碳水、蛋白、脂肪，简短清晰'
-                },
-                {
-                    type: 'image_url',
-                    image_url: {
-                        url: `data:image/jpeg;base64,${base64}`
-                    }
-                }
-            ]
-            const res = await callArkApi(content);
-            RESULT_BOX.textContent = res;
-        }
-    </script>
+// 添加食物记录
+function addFood(){
+  const cal = Number(document.getElementById('foodCalInput').value);
+  const desc = document.getElementById('foodText').value || '食物';
+  if(!cal){alert('请填写热量');return;}
+  appData.records.push({
+    date:new Date().toLocaleDateString(),
+    type:'food',
+    desc:desc,
+    cal:cal
+  });
+  localStorage.setItem('calData',JSON.stringify(appData));
+  alert('食物记录保存成功！');
+  document.getElementById('foodCalInput').value='';
+  document.getElementById('foodText').value='';
+  renderDashboard();
+  switchPage('dashboard');
+}
+// 添加运动
+function addSport(){
+  const cal = Number(document.getElementById('sportCalInput').value);
+  const desc = document.getElementById('sportText').value || '运动';
+  if(!cal){alert('填写消耗热量');return;}
+  appData.records.push({
+    date:new Date().toLocaleDateString(),
+    type:'sport',
+    desc:desc,
+    cal:cal
+  });
+  localStorage.setItem('calData',JSON.stringify(appData));
+  alert('运动记录保存成功！');
+  document.getElementById('sportCalInput').value='';
+  document.getElementById('sportText').value='';
+  renderDashboard();
+  switchPage('dashboard');
+}
+// 删除记录
+function delRec(idx){
+  const today = new Date().toLocaleDateString();
+  const todayRec = appData.records.filter(r=>r.date===today);
+  const delItem = todayRec[idx];
+  const allIdx = appData.records.findIndex(x=>x.date===delItem.date && x.type===delItem.type && x.desc===delItem.desc && x.cal===delItem.cal);
+  appData.records.splice(allIdx,1);
+  localStorage.setItem('calData',JSON.stringify(appData));
+  renderDashboard();
+}
+// 导出导入
+function exportData(){
+  const blob = new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='cal-backup.json';
+  a.click();
+}
+function importData(){document.getElementById('importFile').click();}
+function handleImport(fileDom){
+  const f = fileDom.files[0];
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      appData = data;
+      localStorage.setItem('calData',JSON.stringify(appData));
+      alert('导入成功！');
+      renderDashboard();
+    }catch(err){alert('备份文件损坏！')}
+  }
+  reader.readAsText(f);
+}
+// 初始化
+window.onload = ()=>{
+  document.getElementById('targetInput').value = appData.targetCal;
+  document.getElementById('fatsecretKey').value = appData.fatsecretKey;
+  document.getElementById('doubaoVisionKey').value = appData.doubaoVisionKey;
+  renderDashboard();
+}
+</script>
 </body>
 </html>
